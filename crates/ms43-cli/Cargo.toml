@@ -1,0 +1,17 @@
+[package]
+name = "ms43-cli"
+description = "Milestone 1 proof of concept: MS43 DS2 connection, ident and RPM over K+DCAN"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "ms43"
+path = "src/main.rs"
+
+[dependencies]
+ms43-core = { path = "../ms43-core" }
+chrono.workspace = true
+clap = { version = "4", features = ["derive"] }
+ctrlc = "3"
+serde_json.workspace = true

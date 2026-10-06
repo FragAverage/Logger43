@@ -1,0 +1,13 @@
+[package]
+name = "ms43-core"
+description = "Read-only BMW DS2 / Siemens MS43 protocol, transport and channel definitions"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serialport.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
