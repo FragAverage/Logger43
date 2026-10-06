@@ -27,10 +27,12 @@ impl EventSink for TauriSink {
 
 pub struct AppState {
     pub engine: Mutex<Engine>,
+    pub calibration: Mutex<Option<ms43_core::calibration::Calibration>>,
 }
 
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let sink = Arc::new(TauriSink(app.handle().clone()));
             let mut engine = Engine::new(sink);
@@ -47,6 +49,7 @@ pub fn run() {
             }
             app.manage(AppState {
                 engine: Mutex::new(engine),
+                calibration: Mutex::new(None),
             });
             Ok(())
         })
@@ -69,6 +72,12 @@ pub fn run() {
             commands::stop_raw_recording,
             commands::save_debug_history,
             commands::get_default_log_dir,
+            commands::inspect_bin,
+            commands::load_calibration,
+            commands::unload_calibration,
+            commands::get_calibration,
+            commands::list_tables,
+            commands::get_table,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Logger43");

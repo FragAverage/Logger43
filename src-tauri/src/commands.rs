@@ -1,6 +1,9 @@
 use std::path::PathBuf;
 
 use chrono::Local;
+use ms43_core::calibration::{
+    self, BinInfo, Calibration, CalibrationSummary, TableData, TableInfo,
+};
 use ms43_core::channels::{self, ChannelInfo};
 use ms43_core::engine::{ConnectOptions, ConnectionStatus, EcuInfo, LiveStats, SampleBatch};
 use ms43_core::logger::{LogRequest, LoggerStatus, RunMeta};
@@ -158,4 +161,59 @@ pub fn save_debug_history(app: AppHandle, state: State<'_, AppState>) -> CmdResu
 #[tauri::command]
 pub fn get_default_log_dir(app: AppHandle) -> CmdResult<String> {
     Ok(base_dir(&app)?.join("runs").display().to_string())
+}
+
+// ---------------------------------------------------------------- calibration (read-only files)
+
+fn calibration<'a>(
+    state: &'a State<'_, AppState>,
+) -> std::sync::MutexGuard<'a, Option<Calibration>> {
+    state.calibration.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+#[tauri::command]
+pub fn inspect_bin(path: String) -> CmdResult<BinInfo> {
+    calibration::inspect_bin(std::path::Path::new(&path))
+}
+
+/// Loads a bin + XDF pair. Refuses mismatched software versions.
+#[tauri::command]
+pub fn load_calibration(
+    state: State<'_, AppState>,
+    bin_path: String,
+    xdf_path: String,
+) -> CmdResult<CalibrationSummary> {
+    let cal = Calibration::load(
+        std::path::Path::new(&bin_path),
+        std::path::Path::new(&xdf_path),
+    )?;
+    let summary = cal.summary();
+    *calibration(&state) = Some(cal);
+    Ok(summary)
+}
+
+#[tauri::command]
+pub fn unload_calibration(state: State<'_, AppState>) {
+    *calibration(&state) = None;
+}
+
+#[tauri::command]
+pub fn get_calibration(state: State<'_, AppState>) -> Option<CalibrationSummary> {
+    calibration(&state).as_ref().map(|c| c.summary())
+}
+
+#[tauri::command]
+pub fn list_tables(state: State<'_, AppState>) -> CmdResult<Vec<TableInfo>> {
+    Ok(calibration(&state)
+        .as_ref()
+        .ok_or("no calibration loaded")?
+        .list())
+}
+
+#[tauri::command]
+pub fn get_table(state: State<'_, AppState>, uid: u32) -> CmdResult<TableData> {
+    calibration(&state)
+        .as_ref()
+        .ok_or("no calibration loaded")?
+        .table(uid)
 }

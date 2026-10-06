@@ -87,6 +87,7 @@ export interface EcuInfo {
   ident: EcuIdent;
   layout_trust: LayoutTrust;
   description: string | null;
+  software_version: string | null;
   raw_frame: string;
 }
 
@@ -184,4 +185,63 @@ export interface RunMeta {
   duration_s: number;
   average_sample_rate: number;
   csv_file: string;
+}
+
+// ---------------------------------------------------------------- calibration (ms43-core/src/calibration.rs)
+
+export type BinLayout = "Partial64k" | "Full512k";
+
+export interface BinInfo {
+  path: string;
+  size: number;
+  layout: BinLayout;
+  software_version: string | null;
+}
+
+export interface CalibrationSummary {
+  bin: BinInfo;
+  xdf_path: string;
+  xdf_title: string;
+  xdf_version: string | null;
+  tables: number;
+  overlayable: number;
+}
+
+export interface AxisBinding {
+  var: string;
+  channel: string;
+  exact: boolean;
+  note: string;
+}
+
+export interface TableInfo {
+  uid: number;
+  title: string;
+  description: string;
+  category: string;
+  rows: number;
+  cols: number;
+  units: string;
+  x_units: string;
+  y_units: string;
+  x_channel: AxisBinding | null;
+  y_channel: AxisBinding | null;
+  constant: boolean;
+}
+
+export interface AxisData {
+  units: string;
+  values: number[];
+  binding: AxisBinding | null;
+}
+
+export interface TableData {
+  info: TableInfo;
+  x: AxisData;
+  y: AxisData;
+  values: number[][];
+  raw: number[][];
+  decimals: number;
+  equation: string;
+  address: string;
 }

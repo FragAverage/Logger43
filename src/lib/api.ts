@@ -1,7 +1,10 @@
 // Typed wrappers around Tauri commands and events. The only place that knows command names.
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen as tauriListen, type UnlistenFn } from "@tauri-apps/api/event";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import type {
+  BinInfo,
+  CalibrationSummary,
   ChannelInfo,
   ConnectOptions,
   ConnectionStatus,
@@ -15,6 +18,8 @@ import type {
   ProtocolErrorEvent,
   RunMeta,
   SampleBatch,
+  TableData,
+  TableInfo,
 } from "../types/ms43";
 
 const inTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -55,7 +60,23 @@ export const api = {
   stopRawRecording: () => invoke<string | null>("stop_raw_recording"),
   saveDebugHistory: () => invoke<string>("save_debug_history"),
   getDefaultLogDir: () => invoke<string>("get_default_log_dir"),
+  inspectBin: (path: string) => invoke<BinInfo>("inspect_bin", { path }),
+  loadCalibration: (binPath: string, xdfPath: string) =>
+    invoke<CalibrationSummary>("load_calibration", { binPath, xdfPath }),
+  unloadCalibration: () => invoke<void>("unload_calibration"),
+  getCalibration: () => invoke<CalibrationSummary | null>("get_calibration"),
+  listTables: () => invoke<TableInfo[]>("list_tables"),
+  getTable: (uid: number) => invoke<TableData>("get_table", { uid }),
 };
+
+/** Native file picker. Returns null if cancelled. */
+export async function pickFile(title: string, extensions: string[]): Promise<string | null> {
+  if (import.meta.env.DEV) {
+    if (!inTauri()) return `/mock/${title.replace(/\W+/g, "_")}.${extensions[0]}`;
+  }
+  const r = await openDialog({ title, multiple: false, directory: false, filters: [{ name: extensions.join("/"), extensions }] });
+  return typeof r === "string" ? r : null;
+}
 
 export interface EngineListeners {
   connection_status: (p: ConnectionStatus) => void;

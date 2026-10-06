@@ -164,3 +164,31 @@ main { grid-area: main; overflow: hidden; display: flex; flex-direction: column;
 .dir-DEC td:nth-child(2) { color: var(--ok); }
 .debug-side { overflow: auto; background: var(--panel); border: 1px solid var(--line); padding: 0 8px 8px; }
 .errors div { padding: 1px 0; border-bottom: 1px solid #1b1e22; }
+
+/* tables */
+.tables-page { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 6px; gap: 6px; }
+.cal-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tables-split { flex: 1; min-height: 0; display: grid; grid-template-columns: 300px 1fr; gap: 6px; }
+.table-list { display: flex; flex-direction: column; gap: 4px; min-height: 0; background: var(--panel); border: 1px solid var(--line); padding: 6px; }
+.table-items { flex: 1; overflow-y: auto; }
+.table-item { padding: 3px 4px; border-bottom: 1px solid #1b1e22; cursor: pointer; }
+.table-item:hover { background: var(--panel-2); }
+.table-item.active { background: #123a63; }
+.table-main { min-height: 0; overflow: auto; background: var(--panel); border: 1px solid var(--line); }
+.table-view { display: flex; flex-direction: column; gap: 6px; padding: 8px; }
+.tv-head { display: flex; gap: 10px; align-items: flex-start; }
+.tv-title { font-size: 13px; font-weight: 600; }
+.tv-modes { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.tv-live { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; min-height: 22px; }
+.tv-live b { color: #ffcc33; }
+.tv-live em.warn { color: var(--warn); font-style: normal; }
+.tv-grid { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); position: relative; width: fit-content; min-width: 100%; }
+.tv-corner { background: var(--panel-2); padding: 3px 6px; font-size: 10px; max-width: 180px; }
+.tv-xh, .tv-yh { background: var(--panel-2); padding: 2px 6px; font-size: 11px; color: var(--muted); text-align: center; }
+.tv-yh { text-align: right; }
+.tv-cell { background: var(--panel); padding: 2px 4px; font-size: 11px; text-align: center; color: #e8ecf1; min-height: 20px; }
+.tv-cell.near { outline: 2px solid #ffcc33; outline-offset: -2px; }
+.tv-overlay { position: relative; pointer-events: none; z-index: 2; }
+.tv-overlay svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tv-dot { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #ffcc33; border: 2px solid #000; box-shadow: 0 0 6px #ffcc33aa; }
+.tv-foot { max-width: 900px; }

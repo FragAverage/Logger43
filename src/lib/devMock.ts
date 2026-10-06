@@ -150,6 +150,16 @@ export async function mockInvoke<T>(cmd: string, args?: Record<string, unknown>)
       debug = !!args?.enabled;
       return r(undefined);
     case "get_default_log_dir": return r("~/Documents/Logger43/runs (MOCK)");
+    case "inspect_bin":
+      return r({ path: args?.path, size: 524288, layout: "Full512k", software_version: "430069" });
+    case "load_calibration":
+    case "get_calibration":
+      return r(cmd === "get_calibration" && !calLoaded ? null : ((calLoaded = true), MOCK_CAL));
+    case "unload_calibration":
+      calLoaded = false;
+      return r(undefined);
+    case "list_tables": return r([MOCK_TABLE.info, { ...MOCK_TABLE.info, uid: 2, title: "ip_mock_unbound", x_channel: null, y_channel: null }]);
+    case "get_table": return r(MOCK_TABLE);
     default:
       return r(null);
   }
@@ -161,3 +171,25 @@ export async function mockListen(name: string, cb: (e: { payload: unknown }) => 
   handlers.get(name)!.add(h);
   return () => handlers.get(name)?.delete(h);
 }
+
+// ---- synthetic calibration (shape only; not real MS43 data)
+let calLoaded = false;
+const MOCK_CAL = {
+  bin: { path: "/mock/MOCK_430069.bin", size: 524288, layout: "Full512k", software_version: "430069" },
+  xdf_path: "/mock/MOCK.xdf", xdf_title: "MOCK430069", xdf_version: "430069", tables: 2, overlayable: 1,
+};
+const RPM_AX = [600, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500];
+const LOAD_AX = [50, 100, 150, 200, 250, 300, 350, 400, 450, 500];
+const MOCK_TABLE = {
+  info: {
+    uid: 1, title: "ip_mock_iga__n__maf", description: "MOCK synthetic ignition-like map (not real data)", category: "Ignition",
+    rows: RPM_AX.length, cols: LOAD_AX.length, units: "°CRK", x_units: "mg/stk", y_units: "rpm",
+    x_channel: { var: "maf", channel: "load_mg_stroke", exact: false, note: "mock" },
+    y_channel: { var: "n", channel: "rpm", exact: true, note: "N" }, constant: false,
+  },
+  x: { units: "mg/stk", values: LOAD_AX, binding: { var: "maf", channel: "load_mg_stroke", exact: false, note: "mock" } },
+  y: { units: "rpm", values: RPM_AX, binding: { var: "n", channel: "rpm", exact: true, note: "N" } },
+  values: RPM_AX.map((n) => LOAD_AX.map((l) => Math.round((12 + n / 300 - l / 40) / 0.375) * 0.375)),
+  raw: RPM_AX.map(() => LOAD_AX.map(() => 0)),
+  decimals: 1, equation: "0.375*X-23.625", address: "0x0000",
+};

@@ -4,6 +4,7 @@
 //! → [`safety`] (allow-listed requests) → [`ms43`] / [`channels`] (MS43 layouts and scaling).
 //! Protocol facts and their sources are in `docs/PROTOCOL.md`.
 
+pub mod calibration;
 pub mod channels;
 pub mod ds2;
 pub mod engine;
@@ -16,3 +17,4 @@ pub mod serial;
 pub mod sim;
 pub mod stats;
 pub mod transport;
+pub mod xdf;

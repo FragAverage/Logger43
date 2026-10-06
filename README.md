@@ -30,6 +30,8 @@ crates/ms43-core/     protocol library (no Tauri dependency, unit-tested)
   src/engine.rs         poller thread, connection state machine, ring buffer, batched events
   src/logger.rs         CSV writer thread + run.json sidecar
   src/stats.rs          latency / rate statistics
+  src/xdf.rs            TunerPro XDF parser (MS4x MS43 XDFs)
+  src/calibration.rs    bin + XDF -> tables, version checks, axis -> channel binding
   src/sim.rs            simulator (replays a real MS43 capture) for development
 crates/ms43-cli/      `ms43` binary: PoC + headless logging
 src-tauri/            Tauri shell: commands.rs (commands) + lib.rs (event forwarding)
@@ -162,6 +164,36 @@ RX 19:53:15.236  [12 2D A0 04 03 00 00 ... 90 86 04]  (RTT 69.6 ms, status OKAY)
 RTT: 69.6 ms  (ECU+USB delay after echo 11.7 ms)
 Decoded: Engine speed = 1027.000 rpm  raw=0x0403 (1027) [CrossChecked]
 ```
+
+## Calibration tables and live overlay
+
+The **Tables** tab opens a MS43 calibration with its TunerPro XDF, read-only. It supports 430056
+(v56) and 430069 (v69), and both 64K partial reads and 512K full images.
+
+1. **Load calibration bin…** and pick the bin. The software id (`4300xx` at calibration offset 0x42) picks
+   the XDF. The first time per version you're asked for the XDF; it's remembered after that (the
+   `430056` / `430069` buttons change it). A bin and XDF of different versions are refused.
+2. Pick a table. "Only tables with live axes" (on by default) lists maps whose axes are logged channels.
+3. While connected, a dot and crosshair show the current operating point, with a trail of the last
+   5/15 s, and the bilinearly interpolated table value at that point.
+4. **Hits** counts logged samples per cell. **Mean** shows the mean of a chosen channel per cell.
+   **Mean − table** shows that mean minus the table value, e.g. logged ignition against an ignition map.
+   Statistics cover the whole session buffer and keep updating.
+
+The badge shows whether the calibration matches the connected ECU (`7519308` = 430056,
+`7551615` = 430069). A mismatch disables the overlay.
+
+Axis binding uses the Siemens variable in the table title (`ip_<output>__<y>__<x>`) and the axis
+units together. Exact bindings are the same variable the channel logs (`n`, `maf_mes`, `tco`, …).
+`≈` marks close but not identical ones, most importantly **`maf` → `load_mg_stroke`**: the
+maps' load variable versus the logged `STATUS_LAST`.
+
+The overlay shows where you are on *that* table. MS43 may be using a different table for the same
+output at that moment (warm/cold, octane adaptation, VANOS fault, idle).
+
+CLI equivalent: `ms43 cal --bin <file> --xdf <file> --find iga_optm --table ip_iga_optm_tco_2__n__maf`.
+
+Calibration files and XDFs are git-ignored; keep them out of the repo.
 
 ## Finding the K+DCAN COM port (Windows)
 

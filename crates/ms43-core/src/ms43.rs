@@ -16,6 +16,16 @@ pub const KNOWN_MS43_PART_NUMBERS: &[(&str, &str)] = &[
     ("7511570", "MS43 (Logger.S list; RomRaider ADC/switch defs)"),
 ];
 
+/// MS43 software version for a part number, from the RomRaider ROM definitions' `ecuid`
+/// (`430069` ↔ 7551615, `430056` ↔ 7519308). Other part numbers: unknown.
+pub fn software_version(part_number: &str) -> Option<&'static str> {
+    match part_number {
+        "7551615" => Some("430069"),
+        "7519308" => Some("430056"),
+        _ => None,
+    }
+}
+
 /// Earlier Siemens DMEs whose `0B 03` layout differs (Logger.S `ecuList`). Used for a clear warning.
 pub const KNOWN_NON_MS43_PART_NUMBERS: &[&str] = &["1429764", "1430844", "7526753", "7500255"];
 

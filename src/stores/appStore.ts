@@ -45,7 +45,7 @@ interface AppState {
   debug: DebugRecord[];
   debugCapture: boolean;
   errors: ProtocolErrorEvent[];
-  page: "live" | "debug";
+  page: "live" | "tables" | "debug";
   paused: boolean;
   windowSec: number;
   charts: ChartConfig[];

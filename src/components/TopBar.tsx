@@ -77,6 +77,9 @@ export function TopBar() {
         <button className={page === "live" ? "active" : ""} onClick={() => set({ page: "live" })}>
           Live
         </button>
+        <button className={page === "tables" ? "active" : ""} onClick={() => set({ page: "tables" })}>
+          Tables
+        </button>
         <button className={page === "debug" ? "active" : ""} onClick={() => set({ page: "debug" })}>
           Raw debug
         </button>

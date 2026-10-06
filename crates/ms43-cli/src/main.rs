@@ -13,6 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use clap::{Parser, Subcommand, ValueEnum};
+use ms43_core::calibration::Calibration;
 use ms43_core::channels::{self, ChannelDef, Source};
 use ms43_core::ds2;
 use ms43_core::engine::{ConnState, ConnectOptions, Engine, EngineEvent, EventSink};
@@ -116,6 +117,19 @@ enum Cmd {
         #[arg(long, default_value = "runs")]
         dir: PathBuf,
     },
+    /// Inspect a calibration: bin + XDF summary, search tables, print one as a grid (read-only)
+    Cal {
+        #[arg(long)]
+        bin: PathBuf,
+        #[arg(long)]
+        xdf: PathBuf,
+        /// Substring to search table titles/descriptions
+        #[arg(long)]
+        find: Option<String>,
+        /// Exact table title to print
+        #[arg(long)]
+        table: Option<String>,
+    },
     /// Print the channel catalogue and presets as JSON (used for the browser dev mock)
     #[command(hide = true)]
     Catalog,
@@ -154,6 +168,12 @@ fn main() -> ExitCode {
             s.poll(block.block(), count, all)
         }),
         Cmd::Poc { count } => poc(&cli.opts, count),
+        Cmd::Cal {
+            bin,
+            xdf,
+            find,
+            table,
+        } => calibration_cmd(&bin, &xdf, find, table),
         Cmd::Catalog => {
             let channels: Vec<_> = channels::CHANNELS.iter().map(|c| c.info()).collect();
             println!(
@@ -626,5 +646,78 @@ fn headless_log(
         meta.rows_dropped,
         st.run_dir.display()
     );
+    Ok(())
+}
+
+fn calibration_cmd(
+    bin: &std::path::Path,
+    xdf: &std::path::Path,
+    find: Option<String>,
+    table: Option<String>,
+) -> Result<(), String> {
+    let cal = Calibration::load(bin, xdf)?;
+    let s = cal.summary();
+    println!(
+        "bin {} ({:?}, software {}), XDF '{}': {} tables, {} with live-channel axes",
+        s.bin.path.display(),
+        s.bin.layout,
+        s.bin.software_version.as_deref().unwrap_or("?"),
+        s.xdf_title,
+        s.tables,
+        s.overlayable
+    );
+    let list = cal.list();
+    if let Some(q) = find {
+        let q = q.to_lowercase();
+        for t in list.iter().filter(|t| {
+            t.title.to_lowercase().contains(&q) || t.description.to_lowercase().contains(&q)
+        }) {
+            let b = |b: &Option<ms43_core::calibration::AxisBinding>| {
+                b.as_ref().map_or("-".to_string(), |b| {
+                    format!("{}{}", b.channel, if b.exact { "" } else { "~" })
+                })
+            };
+            println!(
+                "  {:<44} {:>2}x{:<2} {:<12} x:{:<16} y:{:<16} {}",
+                t.title,
+                t.rows,
+                t.cols,
+                t.category,
+                b(&t.x_channel),
+                b(&t.y_channel),
+                t.description
+            );
+        }
+    }
+    if let Some(name) = table {
+        let info = list
+            .iter()
+            .find(|t| t.title == name)
+            .ok_or_else(|| format!("no table titled {name}"))?;
+        let t = cal.table(info.uid)?;
+        println!(
+            "\n{} [{}] {} @ {} = {}",
+            t.info.title, t.info.units, t.info.description, t.address, t.equation
+        );
+        println!(
+            "y: {} ({})   x: {} ({})",
+            t.y.units,
+            t.y.binding.as_ref().map_or("unbound", |b| b.channel),
+            t.x.units,
+            t.x.binding.as_ref().map_or("unbound", |b| b.channel)
+        );
+        print!("{:>9}", "");
+        for x in &t.x.values {
+            print!("{x:>8.1}");
+        }
+        println!();
+        for (r, row) in t.values.iter().enumerate() {
+            print!("{:>9.1}", t.y.values[r]);
+            for v in row {
+                print!("{v:>8.prec$}", prec = t.decimals as usize);
+            }
+            println!();
+        }
+    }
     Ok(())
 }

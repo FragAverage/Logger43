@@ -7,6 +7,7 @@ import { ChannelPanel } from "./components/ChannelPanel";
 import { LogPanel } from "./components/LogPanel";
 import { LivePage } from "./pages/LivePage";
 import { DebugPage } from "./pages/DebugPage";
+import { TablesPage } from "./pages/TablesPage";
 
 export function App() {
   const page = useApp((s) => s.page);
@@ -40,7 +41,7 @@ export function App() {
     <div className="app">
       <TopBar />
       <ChannelPanel />
-      <main>{page === "live" ? <LivePage /> : <DebugPage />}</main>
+      <main>{page === "live" ? <LivePage /> : page === "tables" ? <TablesPage /> : <DebugPage />}</main>
       <LogPanel />
     </div>
   );

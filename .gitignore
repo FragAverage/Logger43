@@ -6,3 +6,10 @@ src-tauri/gen/
 *.log
 logs/
 .DS_Store
+
+# Calibration files and definitions stay local (this repo is public)
+*.bin
+*.BIN
+*.ori
+*.xdf
+*.XDF

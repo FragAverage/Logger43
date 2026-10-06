@@ -98,6 +98,8 @@ pub struct EcuInfo {
     pub ident: EcuIdent,
     pub layout_trust: LayoutTrust,
     pub description: Option<&'static str>,
+    /// "430056" / "430069" when the part number is known.
+    pub software_version: Option<&'static str>,
     pub raw_frame: String,
 }
 
@@ -640,6 +642,10 @@ fn poller_main(shared: Arc<Shared>) {
     let trust = ident.layout_trust();
     let info = EcuInfo {
         description: ident.description(),
+        software_version: ident
+            .bmw_part_number
+            .as_deref()
+            .and_then(crate::ms43::software_version),
         layout_trust: trust,
         raw_frame: ds2::hex(ex.response.bytes()),
         ident,
