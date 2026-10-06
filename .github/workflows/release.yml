@@ -1,0 +1,76 @@
+# Every push to main: run the tests, build the Windows app + installers and the ms43 CLI,
+# and publish them as a GitHub pre-release tagged v<version>-build.<run number>.
+name: Windows release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Test (protocol, safety allow-list, simulator, logger, engine)
+        run: cargo test --workspace --locked
+
+      - name: Build ms43 CLI
+        run: cargo build --release --locked -p ms43-cli
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: echo "version=$(node -p "require('./src-tauri/tauri.conf.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build app and publish release
+        id: tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: .
+          tagName: v${{ steps.version.outputs.version }}-build.${{ github.run_number }}
+          releaseName: Logger43 v${{ steps.version.outputs.version }} build ${{ github.run_number }}
+          releaseBody: |
+            Automated build of ${{ github.sha }}.
+
+            * `Logger43_*_x64-setup.exe`: Windows installer (NSIS), the one to use
+            * `Logger43_*_x64_en-US.msi`: MSI installer
+            * `ms43.exe`: command-line tool for the staged test plan (docs/TESTING.md)
+
+            Read-only MS43 logger. Not yet validated in a car; follow the staged test plan.
+          releaseDraft: false
+          prerelease: true
+          includeUpdaterJson: false
+
+      - name: Attach ms43 CLI to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="v${{ steps.version.outputs.version }}-build.${{ github.run_number }}"
+          cp target/release/ms43.exe "ms43-${tag}.exe"
+          gh release upload "$tag" "ms43-${tag}.exe" --clobber
